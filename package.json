@@ -1,0 +1,23 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "esbuild src/main.js --bundle --servedir=www --outdir=www/js --sourcemap --jsx-factory=Ui.quickh",
+    "build": "rm -rf dist && mkdir -p dist && cp -r www/* dist/ && esbuild src/main.js --bundle --minify --target=es2015 --outdir=dist/js --jsx-factory=Ui.quickh",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:report": "eslint . --format stylish"
+  },
+  "dependencies": {
+    "@material/material-color-utilities": "^0.4.0",
+    "idb": "^8.0.3",
+    "smol-toml": "^1.7.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "esbuild": "0.28.0",
+    "eslint": "^10.8.0",
+    "globals": "^17.9.0",
+    "typescript-eslint": "^8.66.0"
+  }
+}

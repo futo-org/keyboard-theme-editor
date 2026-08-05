@@ -1,0 +1,28 @@
+<svg width="24" xmlns="http://www.w3.org/2000/svg" height="24" id="screenshot-76492864-abc8-803b-8007-a1dc975bb724"
+    viewBox="0 0 24 24" xmlns:xlink="http://www.w3.org/1999/xlink" fill="none" version="1.1">
+    <g id="shape-76492864-abc8-803b-8007-a1dc975bb724" rx="0" ry="0">
+        <g id="shape-76492864-abc8-803b-8007-a1dc534dcb0d">
+            <g class="fills" id="fills-76492864-abc8-803b-8007-a1dc534dcb0d">
+                <path
+                    d="M8,7L8,7L2,13.000579833984375L8.126327514648438,19.12750244140625L9.501327514648438,17.752365112304688L5.75,14.00067138671875L21,14.00067138671875L21,7.9948883056640625L18.983779907226562,7.9948883056640625L18.983779907226562,12.007308959960938L5.75,12.007308959960938L9.5,8.2501220703125L8,7"
+                    style="fill: rgb(255, 255, 255); fill-opacity: 1;" />
+            </g>
+        </g>
+        <g id="shape-76492864-abc8-803b-8007-a1dc975bb728" style="display: none;">
+            <g class="fills" id="fills-76492864-abc8-803b-8007-a1dc975bb728">
+                <rect width="24" height="24" x="0" stroke-linejoin="round"
+                    transform="matrix(1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000)" style="fill: none;"
+                    ry="0" fill="none" rx="0" y="0" />
+            </g>
+            <g fill="none" stroke-linejoin="round"
+                id="strokes-7114c630-6249-80f2-8007-a1dced69c202-76492864-abc8-803b-8007-a1dc975bb728" class="strokes">
+                <g class="stroke-shape">
+                    <rect rx="0" ry="0" x="0" y="0"
+                        transform="matrix(1.000000, 0.000000, 0.000000, 1.000000, 0.000000, 0.000000)" width="24"
+                        height="24"
+                        style="fill: none; stroke-width: 2; stroke: rgb(255, 255, 255); stroke-opacity: 1;" />
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
