@@ -11,7 +11,7 @@
     "watch": "esbuild index.cjs --bundle --sourcemap --global-name=ThemeCore --outfile=dist/ThemeCore.js --format=iife --watch"
   },
   "dependencies": {
-    "smol-toml": "^1.7.0"
+    "smol-toml": "^1.9.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

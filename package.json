@@ -11,7 +11,7 @@
   "dependencies": {
     "@material/material-color-utilities": "^0.4.0",
     "idb": "^8.0.3",
-    "smol-toml": "^1.7.0"
+    "smol-toml": "^1.9.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
