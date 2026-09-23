@@ -1,0 +1,23 @@
+{
+  "name": "themeshop-core",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build-debug": "esbuild index.cjs --bundle --sourcemap --global-name=ThemeCore --outfile=dist/ThemeCore.js --format=iife",
+    "build-min": "esbuild index.cjs --bundle --minify --global-name=ThemeCore --outfile=dist/ThemeCore.min.js --format=iife",
+    "build": "npm run build-debug && npm run build-min",
+    "watch": "esbuild index.cjs --bundle --sourcemap --global-name=ThemeCore --outfile=dist/ThemeCore.js --format=iife --watch"
+  },
+  "dependencies": {
+    "smol-toml": "^1.7.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "esbuild": "0.28.0",
+    "eslint": "^10.8.0",
+    "globals": "^17.9.0",
+    "typescript-eslint": "^8.66.0"
+  }
+}

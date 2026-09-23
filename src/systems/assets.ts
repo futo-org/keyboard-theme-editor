@@ -1,5 +1,4 @@
-import { mergeDicts } from "../db";
-import { ColorString } from "../keyboard/types/Theme";
+import { DEFAULT_ICONS, mergeDicts, Asset, BackgroundAsset, IconAsset, OtherAsset, AssetMeta, genUniqueName, getFileType, DefaultAssets } from "../../core/assets";
 
 const AssetStore = {
 	EV_FILE_ADDED: "fileAdded",
@@ -20,99 +19,6 @@ const AssetStore = {
 	update: updateAsset,
 	loadSaved: loadSavedAsset
 };
-
-export type Asset = {
-	runtime: AssetRuntimeData;
-	meta: AssetMeta;
-	data: BackgroundAsset | IconAsset | OtherAsset;
-}
-
-export type Rect = {
-	left: number;
-	top: number;
-	right: number;
-	bottom: number;
-}
-
-export type AssetRuntimeData = {
-	url: string;
-	preview?: string;
-	img?: ImageBitmap | HTMLImageElement;
-};
-
-export type AssetMeta = {
-	name: string;
-	type: "image" | "font";
-	kind: "background" | "icon" | "other";
-	builtin: boolean;
-}
-
-export type BackgroundAsset = {
-	colorKind: "constant" | "themed";
-	foregroundConstant: ColorString;
-	backgroundConstant: ColorString;
-	foregroundToken: string;
-	backgroundToken: string;
-	padding: Rect;
-	gap?: Rect;
-	slicing: Rect;
-	targetDensity: number;
-}
-
-export type IconAsset = {
-	targetDensity: number;
-}
-
-export type OtherAsset = {
-	cropping: Rect;
-}
-
-export const DefaultAssets = {
-	"background": {
-		colorKind: "constant",
-		foregroundConstant: "#000000",
-		backgroundConstant: "#ffffff",
-
-		foregroundToken: "onKeyboardContainer",
-		backgroundToken: "keyboardContainer",
-
-		padding: {
-			left: 0, top: 0, right: 0, bottom: 0,
-		},
-
-		gap: {
-			left: 1, top: 1, right: 1, bottom: 1,
-		},
-
-		slicing: {
-			left: 0, top: 0, right: 1, bottom: 1
-		},
-
-		targetDensity: 640.0
-	} as BackgroundAsset,
-	"icon": {
-		targetDensity: 640.0
-	} as IconAsset,
-	"other": {
-		cropping: {
-			left: 0, top: 0, right: 1, bottom: 1
-		}
-	} as OtherAsset
-};
-
-
-export function genUniqueName(fn: string | undefined){
-	return window.crypto.randomUUID() + "___" + (fn ?? "untitled");
-}
-
-
-export function getFileType(name: string): "image" | "font" {
-	const split = (name).toLowerCase().split('.');
-	const extension = split[split.length - 1];
-
-	if(extension === "ttf" || extension === "otf") return "font";
-	else return "image";
-}
 
 async function createFontPreview(filename: string, url: string): Promise<[Blob, string]> {
 	const fontName = filename + "FontPreview";
@@ -270,22 +176,6 @@ function addBuiltinAsset(name: string, url: string, kind: "background" | "icon" 
 }
 
 export function addBuiltInAssets() {
-	const DEFAULT_ICONS = {
-		"shift_key": "icons/shift.svg",
-		"delete_key": "icons/delete.svg",
-		"space_key": "icons/space.svg",
-		"space_key_for_number_layout": "icons/space_2.svg",
-		"enter_key": "icons/enter.svg",
-		"action_emoji": "icons/emoji.svg",
-		"chevron_right": "icons/chevron_right.svg",
-		"mic_fill": "icons/mic_fill.svg",
-		"action_switch_language": "icons/globe.svg",
-		"action_left": "icons/arrow-left.svg",
-		"action_right": "icons/arrow-right.svg",
-		"action_undo": "icons/undo.svg",
-		"numpad": "icons/numpad.svg",
-	};
-
 	Object.entries(DEFAULT_ICONS).forEach(([filename, url]) => {
 		addBuiltinAsset(filename, url, "icon");
 	});
@@ -331,30 +221,3 @@ function loadSavedAsset(assetName: string, meta: AssetMeta, data: BackgroundAsse
 }
 
 export default AssetStore;
-
-/*// not used currently
-import Ui from "../ui";
-import State from "../state";
-const AssetStore = {
-	assets: {},
-	
-	ev: Ev.makeEventBus(),
-	EV_FILE_ADDED: "fileAdded",
-	EV_FILE_REMOVED: "fileRemoved",
-};
-
-function addFile(filename, file) {
-	const url = URL.createObjectURL(file);
-	AssetStore.assets[filename] = { url };
-	
-	AssetStore.ev.emit(AssetStore.EV_FILE_ADDED, filename);
-}
-
-function removeFile(filename) {
-	delete AssetStore.assets[filename];
-	AssetStore.ev.emit(AssetStore.EV_FILE_REMOVED, filename);
-	
-}
-
-export default AssetStore;*/
-

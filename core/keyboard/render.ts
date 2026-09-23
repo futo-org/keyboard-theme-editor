@@ -1,13 +1,13 @@
 import { createNinePatch, drawNinePatch, getEffectiveBackgroundTint, getEffectiveForegroundTint } from './ninepatch';
 import { Theme, ThemeKeyIconAsset, ThemeOptions } from './types/Theme';
-import AssetStore, { OtherAsset, Rect } from '../systems/assets';
+import { IAssetStore, OtherAsset, Rect } from '../assets.ts';
 import { forceAlpha, HEXtoRGB } from './color';
 import { matchesKey, parseQualifiers, suggestQualifiersForKey } from './qualifiers';
 import { dp, pxToDp } from './density';
 
 const robotoUrl = "Roboto-Regular.ttf";
 
-function drawTintedImage(ctx: CanvasRenderingContext2D, icon: CanvasImageSource, x: number, y: number, w: number, h: number, tint: string) {
+function drawTintedImage(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, icon: CanvasImageSource, x: number, y: number, w: number, h: number, tint: string) {
 	const tempCanvas = document.createElement('canvas');
 	const tempCtx = tempCanvas.getContext('2d')!;
 	tempCanvas.width = w;
@@ -22,8 +22,8 @@ function drawTintedImage(ctx: CanvasRenderingContext2D, icon: CanvasImageSource,
 	ctx.drawImage(tempCanvas, x, y);
 }
 
-function getAssetImage(assetName: string) {
-	const asset = AssetStore.store[assetName];
+function getAssetImage(store: IAssetStore, assetName: string) {
+	const asset = store.store[assetName];
 	if(!asset) {
 		console.error("asset " + assetName + " has no corresponding entry in assetStore...");
 		return undefined;
@@ -32,7 +32,7 @@ function getAssetImage(assetName: string) {
 	return asset.runtime.img;
 }
 
-function drawKeyForeground(ctx: CanvasRenderingContext2D, currIcons: Array<[ParsedQualifiers, string]>, key: EnrichedKey, fgCol: string, hintCol: string | null, offsetY: number, layout: EnrichedLayout, padding: Rect | undefined, options: ThemeOptions, kx: number, ky: number, kw: number, kh: number) {
+function drawKeyForeground(store: IAssetStore, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, currIcons: Array<[ParsedQualifiers, string]>, key: EnrichedKey, fgCol: string, hintCol: string | null, offsetY: number, layout: EnrichedLayout, padding: Rect | undefined, options: ThemeOptions, kx: number, ky: number, kw: number, kh: number) {
 	const centerHints = options.centerHints;
 	ctx.fillStyle = fgCol;
 
@@ -87,7 +87,7 @@ function drawKeyForeground(ctx: CanvasRenderingContext2D, currIcons: Array<[Pars
 	let icon = undefined;
 	for (const v of currIcons) {
 		if (matchesKey(v[0], key, layout)) {
-			icon = getAssetImage(v[1]);
+			icon = getAssetImage(store, v[1]);
 			if(icon) break;
 		}
 	}
@@ -151,7 +151,7 @@ function drawKeyForeground(ctx: CanvasRenderingContext2D, currIcons: Array<[Pars
 	}
 }
 
-function drawKeyHighlight(ctx: CanvasRenderingContext2D, key: EnrichedKey, theme: Theme, layout: EnrichedLayout) {
+function drawKeyHighlight(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, key: EnrichedKey, theme: Theme, layout: EnrichedLayout) {
 	const radius = dp(9, layout.density);
 
 	ctx.strokeStyle = "#00FFFF";
@@ -214,7 +214,7 @@ function lookupFillStyles(key: EnrichedKey, theme: Theme, lookup: boolean) {
 	return result;
 }
 
-function drawFallbackBackground(ctx: CanvasRenderingContext2D, key: EnrichedKey, theme: Theme, layout: EnrichedLayout) {
+function drawFallbackBackground(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, key: EnrichedKey, theme: Theme, layout: EnrichedLayout) {
 	const style = lookupFillStyles(key, theme, true);
 	const radius = dp(style.radius, layout.density) * theme.options.roundedness;
 
@@ -235,7 +235,7 @@ function drawFallbackBackground(ctx: CanvasRenderingContext2D, key: EnrichedKey,
 	return style.foreground;
 }
 
-function drawFallbackPopup(ctx: CanvasRenderingContext2D, theme: any, key: any, layout: any, x: number, y: number, width: number, height: number) {
+function drawFallbackPopup(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, theme: any, key: any, layout: any, x: number, y: number, width: number, height: number) {
 	const radius = dp(9, layout.density) * theme.options.roundedness;
 
 	ctx.fillStyle = theme.colors.keyboardPress;
@@ -246,17 +246,17 @@ function drawFallbackPopup(ctx: CanvasRenderingContext2D, theme: any, key: any, 
 	return theme.colors.onKeyboardContainer;
 }
 
-function matchIcon(icon: string, currIcons: Array<[ParsedQualifiers, string]>) {
+function matchIcon(store: IAssetStore, icon: string, currIcons: Array<[ParsedQualifiers, string]>) {
 	for(const candidate of currIcons) {
 		if(candidate[0][0].token == "DEFAULT_ICONS" && candidate[0][1].fn!({iconId: icon} as any, {} as any)) {
-			const result = getAssetImage(candidate[1]);
+			const result = getAssetImage(store, candidate[1]);
 			if(result) return result;
 		}
 	}
 	return null;
 }
 
-function renderActionBar(ctx: CanvasRenderingContext2D, theme: Theme, layout: EnrichedLayout, currIcons: Array<[ParsedQualifiers, string]>) {
+function renderActionBar(store: IAssetStore, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, theme: Theme, layout: EnrichedLayout, currIcons: Array<[ParsedQualifiers, string]>) {
 	if(layout.actionBar !== true) return;
 
 	const dpl = (v: number) => dp(v, layout.density);
@@ -324,16 +324,17 @@ function renderActionBar(ctx: CanvasRenderingContext2D, theme: Theme, layout: En
 	ctx.arc(layout.width - dpl(20), height/2, dpl(16), 0, 2 * Math.PI);
 	ctx.fill();
 
-	const chevron = matchIcon("chevron_right", currIcons);
-	const mic = matchIcon("mic_fill", currIcons);
+	const chevron = matchIcon(store, "chevron_right", currIcons);
+	const mic = matchIcon(store, "mic_fill", currIcons);
 	let iconSize = dpl(20);
 	if(chevron) drawTintedImage(ctx, chevron, dpl(20) - iconSize / 2, height / 2 - iconSize / 2, iconSize, iconSize, theme.colors.onKeyboardContainer);
 	iconSize = dpl(16);
 	if(mic) drawTintedImage(ctx, mic, layout.width - dpl(20) - iconSize / 2, height / 2 - iconSize / 2, iconSize, iconSize, theme.colors.onKeyboardContainer);
 }
 
-function render({ctx, theme, currBgs, currIcons, layout, previewSelector} : {
-	ctx: CanvasRenderingContext2D,
+function render({store, ctx, theme, currBgs, currIcons, layout, previewSelector} : {
+	store: IAssetStore,
+	ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
 	theme: Theme,
 	currBgs: Array<[ParsedQualifiers, NinePatch]>,
 	currIcons: Array<[ParsedQualifiers, string]>,
@@ -345,7 +346,7 @@ function render({ctx, theme, currBgs, currIcons, layout, previewSelector} : {
 	ctx.fillStyle = forceAlpha(theme.colors.keyboardSurface, 1.0);
 	ctx.fillRect(0, 0, layout.width, layout.height);
 	if(theme.assets.background.image) {
-		const backgroundAsset = AssetStore.store[theme.assets.background.image];
+		const backgroundAsset = store.store[theme.assets.background.image];
 		const img = backgroundAsset.runtime?.img;
 		if(backgroundAsset && img) {
 			const bgWidth = img.width;
@@ -378,7 +379,7 @@ function render({ctx, theme, currBgs, currIcons, layout, previewSelector} : {
 		}
 	}
 
-	renderActionBar(ctx, theme, layout, currIcons);
+	renderActionBar(store, ctx, theme, layout, currIcons);
 
 	const hintCol = null;
 
@@ -431,7 +432,7 @@ function render({ctx, theme, currBgs, currIcons, layout, previewSelector} : {
 			}
 
 			if(fgCol !== undefined && HEXtoRGB(fgCol).a != 0) {
-				drawKeyForeground(ctx, currIcons, key, fgCol, hintCol, 0, layout, padding, theme.options, x, y, w, h);
+				drawKeyForeground(store, ctx, currIcons, key, fgCol, hintCol, 0, layout, padding, theme.options, x, y, w, h);
 			}
 		}
 	}
@@ -445,7 +446,7 @@ function render({ctx, theme, currBgs, currIcons, layout, previewSelector} : {
 			if (!isPopup) continue;
 			if (matchesKey(popupless, key, layout)) {
 				drawNinePatch(ctx, v[1], key.drawX, key.y - key.height, key.width, key.height * 2);
-				drawKeyForeground(ctx, currIcons, key, v[1].foreground, hintCol, -key.height * 9 / 10, layout, undefined, theme.options,
+				drawKeyForeground(store, ctx, currIcons, key, v[1].foreground, hintCol, -key.height * 9 / 10, layout, undefined, theme.options,
 					key.drawX, key.y, key.width, key.height);
 
 				bgDrawn = true;
@@ -455,7 +456,7 @@ function render({ctx, theme, currBgs, currIcons, layout, previewSelector} : {
 
 		if(!bgDrawn) {
 			const fgColor = drawFallbackPopup(ctx, theme, key, layout, key.drawX, key.y - key.height, key.width, key.height * 2);
-			drawKeyForeground(ctx, currIcons, key, fgColor, hintCol, -key.height * 9 / 10, layout, undefined, theme.options,
+			drawKeyForeground(store, ctx, currIcons, key, fgColor, hintCol, -key.height * 9 / 10, layout, undefined, theme.options,
 				key.drawX, key.y, key.width, key.height);
 		}
 	}
@@ -481,6 +482,7 @@ export interface RenderContext {
 	onmousedown?: (normX: number, normY: number) => void;
 	onmouseup?: () => void;
 	loadingFont?: string;
+	assetStore?: IAssetStore;
 }
 
 
@@ -646,7 +648,7 @@ export function initRenderContext(refresh: () => void): RenderContext {
 	};
 }
 
-function renderContextDetectKey(rc: RenderContext, canvas: HTMLCanvasElement, layout: Layout, normX: number, normY: number) {
+function renderContextDetectKey(rc: RenderContext, canvas: HTMLCanvasElement | OffscreenCanvas, layout: Layout, normX: number, normY: number) {
 	const x = normX * canvas.width;
 	const y = normY * canvas.height;
 
@@ -659,7 +661,7 @@ function renderContextDetectKey(rc: RenderContext, canvas: HTMLCanvasElement, la
 	return undefined;
 }
 
-function registerCanvasInput(rc: RenderContext, canvas: HTMLCanvasElement, layout: EnrichedLayout) {
+function registerCanvasInput(rc: RenderContext, canvas: HTMLCanvasElement | OffscreenCanvas, layout: EnrichedLayout) {
 	rc.onmousedown = (normX: number, normY: number) => {
 		const key = renderContextDetectKey(rc, canvas, layout, normX, normY);
 		if(key) {
@@ -680,7 +682,9 @@ function registerCanvasInput(rc: RenderContext, canvas: HTMLCanvasElement, layou
 }
 
 
-export function renderContextGetDetectedKeyInfo(rc: RenderContext, canvas: HTMLCanvasElement, layout: Layout, theme: Theme, normX: number, normY: number) {
+export function renderContextGetDetectedKeyInfo(rc: RenderContext, canvas: HTMLCanvasElement | OffscreenCanvas, layout: Layout, theme: Theme, normX: number, normY: number) {
+	if(!rc.assetStore) return undefined;
+
 	const key = renderContextDetectKey(rc, canvas, layout, normX, normY);
 	if(!key) return undefined;
 
@@ -711,13 +715,13 @@ export function renderContextGetDetectedKeyInfo(rc: RenderContext, canvas: HTMLC
 	if(result.bgMatches.length > 0) {
 		const { asset } = result.bgMatches[0];
 
-		const obj = AssetStore.store[asset];
+		const obj = rc.assetStore.store[asset];
 
-		const bgTint = getEffectiveBackgroundTint(obj, true);
-		const fgTint = getEffectiveForegroundTint(obj, true);
+		const bgTint = getEffectiveBackgroundTint(rc.theme, obj, true);
+		const fgTint = getEffectiveForegroundTint(rc.theme, obj, true);
 
-		result.background = `Asset ${AssetStore.store[asset].meta.name} ${bgTint.toLowerCase() !== "#ffffff" ? "× its background tint " + bgTint : ""}`;
-		result.foreground = `Foreground color of asset ${AssetStore.store[asset].meta.name} (${fgTint})`;
+		result.background = `Asset ${rc.assetStore.store[asset].meta.name} ${bgTint.toLowerCase() !== "#ffffff" ? "× its background tint " + bgTint : ""}`;
+		result.foreground = `Foreground color of asset ${rc.assetStore.store[asset].meta.name} (${fgTint})`;
 		result.backgroundAsset = asset;
 	} else {
 		const style = lookupFillStyles(key, theme, false);
@@ -729,7 +733,7 @@ export function renderContextGetDetectedKeyInfo(rc: RenderContext, canvas: HTMLC
 }
 
 interface NinePatch {
-	image: HTMLCanvasElement;
+	image: HTMLCanvasElement | OffscreenCanvas;
 	foreground: string;
 	stretchX: number[][];
 	stretchY: number[][];
@@ -743,7 +747,9 @@ type ParsedQualifiers = {
 	fn: ((key: EnrichedKey, kb: EnrichedLayout) => boolean) | null;
 }[];
 
-export function updateRenderContext(rc: RenderContext, ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, theme: Theme, layout: Layout) {
+export function updateRenderContext(rc: RenderContext, assetStore: IAssetStore, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, canvas: HTMLCanvasElement | OffscreenCanvas, theme: Theme, layout: Layout) {
+	rc.assetStore = assetStore;
+
 	const elayout = enrichLayout(layout);
 
 	rc.theme = theme;
@@ -759,16 +765,16 @@ export function updateRenderContext(rc: RenderContext, ctx: CanvasRenderingConte
 
 	for (const {selector, asset} of theme.assets.key) {
 		const qualifiers = parseQualifiers(selector);
-		const img = AssetStore.store[asset];
+		const img = rc.assetStore.store[asset];
 		if(qualifiers && img) {
-			const ninepatch = createNinePatch(img, density);
+			const ninepatch = createNinePatch(theme, img, density);
 			if(ninepatch) rc.backgrounds.push([qualifiers, ninepatch]);
 		}
 	}
 	
 	for (const {selector, asset} of theme.assets.icon) {
 		const qualifiers = parseQualifiers(selector);
-		const img = AssetStore.store[asset];
+		const img = rc.assetStore.store[asset];
 		if(qualifiers && img) {
 			rc.icons.push([qualifiers, asset]);
 		}
@@ -794,25 +800,42 @@ export function updateRenderContext(rc: RenderContext, ctx: CanvasRenderingConte
 		rc.icons.push([qualifiers, k]);
 	}
 
-	const urlFont = AssetStore.store[theme.assets.font ?? ""]?.runtime?.url ?? robotoUrl;
+	return loadRenderContextFont(rc).then((v) => { if(v) rc.refresh() });
+}
+
+async function loadRenderContextFont(rc: RenderContext) {
+	const theme = rc.theme!;
+	const urlFont = rc.assetStore!.store[theme.assets.font ?? ""]?.runtime?.url ?? robotoUrl;
 	if(rc.loadingFont !== urlFont) {
 		rc.loadingFont = urlFont;
 		styleElement.textContent = `
-				@font-face {
-					font-family: "theme-font";
-					src: url(${urlFont}) format("truetype");
-				}
-			`;
+		@font-face {
+			font-family: "theme-font";
+			src: url(${urlFont}) format("truetype");
+		}
+		`;
 
 		if(!styleElement.parentElement) document.head.appendChild(styleElement);
-		document.fonts.load('1em "theme-font"')
-			.then(() => {
-				console.log("Font loaded");
-				rc.refresh();
-			});
+		await document.fonts.load('1em "theme-font"');
+		return true;
 	}
+	return false;
 }
 
-export function drawRenderContext(rc: RenderContext, ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, layout: Layout, selectorBeingPreviewed: string) {
-	render({ctx, currBgs: rc.backgrounds, currIcons: rc.icons, layout: enrichLayout(layout), theme: rc.theme!, previewSelector: selectorBeingPreviewed});
+export function drawRenderContext(rc: RenderContext, ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, canvas: HTMLCanvasElement | OffscreenCanvas, layout: Layout, selectorBeingPreviewed: string) {
+	render({store: rc.assetStore!, ctx, currBgs: rc.backgrounds, currIcons: rc.icons, layout: enrichLayout(layout), theme: rc.theme!, previewSelector: selectorBeingPreviewed});
+}
+
+
+export async function drawThemeOnceOff(theme: Theme, layout: Layout, assetStore: IAssetStore) {
+	const canvas = new OffscreenCanvas(layout.width, layout.height * 2);
+	const ctx = canvas.getContext("2d");
+	if(!ctx) throw new Error("Couldnt initialize 2d context");
+
+	const rc = initRenderContext(() => {});
+	await updateRenderContext(rc, assetStore, ctx, canvas, theme, layout);
+	drawRenderContext(rc, ctx, canvas, layout, "");
+	const blob = await canvas.convertToBlob();
+
+	return blob;
 }

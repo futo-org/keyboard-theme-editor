@@ -1,10 +1,11 @@
 import State from "../state";
-import { HEXtoRGB, RGBtoHEX, toHCT } from "../keyboard/color";
-import { parseQualifiers } from "../keyboard/qualifiers";
+import { HEXtoRGB } from "../../core/keyboard/color";
+import { toHCT, RGBtoHEX } from "../color";
+import { parseQualifiers } from "../../core/keyboard/qualifiers";
 import { colorPairs } from "../panels/assetconfig";
 import AssetStore from "../systems/assets";
 import Ui from "../ui"
-import { UZIP } from "../vendor/UZIP";
+import { UZIP } from "../../core/vendor/UZIP";
 
 function formatBytes(bytes, decimals = 1) {
 	if (bytes === 0) return '0 Bytes';

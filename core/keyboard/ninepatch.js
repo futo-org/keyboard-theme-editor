@@ -1,4 +1,3 @@
-import State from "../state";
 import { HEXtoRGB } from "./color";
 
 export function drawNinePatch(ctx, ninePatch, destX, destY, destWidth, destHeight) {
@@ -108,30 +107,30 @@ export function scaleNinePatchImage(image, scale, tint) {
 	return canvas;
 }
 
-export function getEffectiveForegroundTint(assetObj, passthruToken) {
+export function getEffectiveForegroundTint(theme, assetObj, passthruToken) {
 	if(assetObj.data.colorKind === "constant") {
 		return assetObj.data.foregroundConstant;
 	} else {
 		if(passthruToken) return assetObj.data.foregroundToken;
-		return State.theme.colors[assetObj.data.foregroundToken];
+		return theme.colors[assetObj.data.foregroundToken];
 	}
 }
 
-export function getEffectiveBackgroundTint(assetObj, passthruToken) {
+export function getEffectiveBackgroundTint(theme, assetObj, passthruToken) {
 	if(assetObj.data.colorKind === "constant") {
 		return assetObj.data.backgroundConstant;
 	} else {
 		if(passthruToken) return assetObj.data.backgroundToken;
-		return State.theme.colors[assetObj.data.backgroundToken];
+		return theme.colors[assetObj.data.backgroundToken];
 	}
 }
 
-export function createNinePatch(assetObj, density) {
+export function createNinePatch(theme, assetObj, density) {
 	const img = assetObj.runtime.img;
 	if(!img) return null;
 	const { slicing, padding, targetDensity, gap } = assetObj.data;
 
-	const tint = getEffectiveBackgroundTint(assetObj);
+	const tint = getEffectiveBackgroundTint(theme, assetObj);
 
 	const scale = density / targetDensity;
 	const scaled = scaleNinePatchImage(img, scale, tint);
@@ -149,7 +148,7 @@ export function createNinePatch(assetObj, density) {
 		bottom: sy(padding.bottom),
 	};
 
-	const foreground = getEffectiveForegroundTint(assetObj);
+	const foreground = getEffectiveForegroundTint(theme, assetObj);
 
 	const result = {
 		image: scaled,

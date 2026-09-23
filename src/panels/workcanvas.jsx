@@ -1,13 +1,13 @@
 import Ev from '../event';
 import Ui from "../ui";
-import Layouts from '../keyboard/layouts/layouts';
+import Layouts from '../../core/keyboard/layouts/layouts';
 import State from '../state';
-import { initRenderContext, updateRenderContext, drawRenderContext, renderContextGetDetectedKeyInfo } from '../keyboard/render';
+import { initRenderContext, updateRenderContext, drawRenderContext, renderContextGetDetectedKeyInfo } from '../../core/keyboard/render';
 import { drawMaterialColorDemo } from '../material/render';
 import { TabbedPanels } from './tabs';
 import ToolPanel from './tools';
 import AssetStore from '../systems/assets';
-import { createNinePatch, drawNinePatch, getEffectiveForegroundTint } from '../keyboard/ninepatch';
+import { createNinePatch, drawNinePatch, getEffectiveForegroundTint } from '../../core/keyboard/ninepatch';
 import { displayKeyInfo } from '../windows/KeyInfoWindow';
 
 function makeMaterialTabObject() {
@@ -335,7 +335,7 @@ function refreshCanvas(reason) {
 		}
 		
 		if(needsRender && State.isProjectLoaded) {
-			updateRenderContext(tab.render, tab.ctx, tab.off, State.theme, tab.layout);
+			updateRenderContext(tab.render, AssetStore, tab.ctx, tab.off, State.theme, tab.layout);
 			drawRenderContext(tab.render, tab.ctx, tab.off, tab.layout, WorkCanvas.selectorBeingPreviewed);
 			console.log("needs render", reason);
 		}
@@ -405,7 +405,7 @@ function refreshCanvas(reason) {
 			const ctx = tab.tex6.getContext("2d");
 			ctx.clearRect(0, 0, tab.off.width * 6, tab.off.height * 6);
 
-			const ninepatch = createNinePatch(obj, obj.data.targetDensity);
+			const ninepatch = createNinePatch(State.theme, obj, obj.data.targetDensity);
 			drawNinePatch(ctx, ninepatch, tab.off.width, 0, tab.off.width*5, tab.off.height);
 			drawNinePatch(ctx, ninepatch, 0, tab.off.height, tab.off.width, tab.off.height*5);
 			drawNinePatch(ctx, ninepatch, tab.off.width, tab.off.height, tab.off.width*5, tab.off.height*5);
@@ -413,7 +413,7 @@ function refreshCanvas(reason) {
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
 			ctx.font = `${tab.off.height * 0.25}px theme-font`
-			ctx.fillStyle = getEffectiveForegroundTint(obj);
+			ctx.fillStyle = getEffectiveForegroundTint(State.theme, obj);
 			ctx.fillText("9-slice stretch preview", tab.off.width * 3.5, tab.off.height * 0.5);
 
 			ctx.fillText("Tall", tab.off.width * 0.5, tab.off.height * 3.5);

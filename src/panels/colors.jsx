@@ -1,9 +1,10 @@
 import Ui from "../ui";
 import State from "../state";
 import WorkCanvas from "./workcanvas";
-import { DEFAULT_THEME } from "../keyboard/types/Theme";
+import { DEFAULT_THEME } from '../../core/keyboard/types/Theme';
 import ColorPickerWindow from "../windows/ColorPickerWindow";
-import { fromHCT, HEXtoRGB, RGBtoHEX, toHCT } from "../keyboard/color";
+import { HEXtoRGB } from "../../core/keyboard/color";
+import { fromHCT, toHCT, RGBtoHEX } from "../color";
 
 const ColorsPanel = {
 	build: colorsPanel,

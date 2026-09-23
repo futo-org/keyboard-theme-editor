@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <title>ThemeCore example</title>
+</head>
+<body>
+  <script src="ThemeCore.js"></script>
+
+  <input type="file" id="fileInput" />
+  <img id="resultimg" />
+  <script>
+    document.getElementById("fileInput").oninput = (ev) => {
+        const file = ev.target.files[0];
+        if (file) {
+			const reader = new FileReader();
+			reader.onload = () => {
+                const { newTheme, newStore } = ThemeCore.importToml(reader.result);
+                console.log({ newTheme, newStore });
+
+                // Note: this leaks createObjectURL rn
+                ThemeCore.assetStoreOnceOff(newStore).then((store) => {
+                    ThemeCore.drawThemeOnceOff(newTheme, ThemeCore.Layouts.QWERTY, store).then((blob) => {
+                        document.getElementById("resultimg").src = URL.createObjectURL(blob);
+                    })
+                });
+            }
+			reader.readAsArrayBuffer(file);
+        }
+    }
+  </script>
+</body>
+</html>

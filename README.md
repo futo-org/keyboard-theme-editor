@@ -12,6 +12,8 @@ There is a lot of global state use in this project. For example, the current the
 
 The editor supports full undo and redo via `State.execute`, which takes forward and backward functions for modifying and reverting state. Any changes to the theme should go through this function to ensure the user can Ctrl+Z their change.
 
+There is a core library at `core/` for external use (to load and render theme ZIPs) which the editor at `src/` uses.
+
 ## Development
 
 After cloning the repo, run `npm install`. You can now execute `npm run dev` to start the development server.
@@ -20,4 +22,4 @@ To run the linter, run `npm run lint`. Some problems like wrong indentation are 
 
 ## Editing
 
-The theming system is very heavily tied to FUTO Keyboard. If you at all touch `src/keyboard/render.ts` or the TOML exporting code in `src/windows/ExportWindow.jsx`, then changes will be necessary in the FUTO Keyboard app. Please consult by opening a proposal issue first.
+The theming system is very heavily tied to FUTO Keyboard. If you at all touch `core/keyboard/render.ts` or the TOML exporting code in `src/windows/ExportWindow.jsx`, then changes will be necessary in the FUTO Keyboard app. Please consult by opening a proposal issue first.

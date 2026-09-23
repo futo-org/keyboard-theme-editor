@@ -1,4 +1,5 @@
-import { HSVtoRGB, RGBtoHEX, RGBtoHSV, HEXtoRGB } from '../keyboard/color';
+import { HEXtoRGB } from '../../core/keyboard/color';
+import { HSVtoRGB, RGBtoHEX, RGBtoHSV } from '../color';
 import Ui from "../ui";
 
 function updateColor(newHex) {

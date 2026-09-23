@@ -226,5 +226,3 @@ export const DEFAULT_THEME: Theme = {
 		}
 	}
 }
-
-//export type ThemeParms = {theme: Theme, setTheme: React.Dispatch<React.SetStateAction<Theme>>};

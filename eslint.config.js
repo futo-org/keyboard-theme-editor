@@ -4,8 +4,8 @@ import tseslint from "typescript-eslint";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
-	{ ignores: ["dist/**", "node_modules/**", "src/vendor/**"] },
-	{ files: ["src/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
+	{ ignores: ["dist/**", "core/dist/**", "node_modules/**", "core/node_modules/**", "core/vendor/**", "core/index.cjs"] },
+	{ files: ["src/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}", "core/**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"], languageOptions: { globals: globals.browser } },
 	tseslint.configs.recommended,
 	{ rules: {
 		"@typescript-eslint/no-unused-vars": ["error", {

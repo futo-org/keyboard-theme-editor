@@ -1,7 +1,8 @@
-import { DEFAULT_THEME } from './keyboard/types/Theme';
+import { DEFAULT_THEME } from '../core/keyboard/types/Theme';
 import State from './state';
 import { openDB } from "idb";
-import AssetStore, { AssetMeta, BackgroundAsset, IconAsset, OtherAsset } from './systems/assets';
+import AssetStore from './systems/assets';
+import { AssetMeta, BackgroundAsset, IconAsset, OtherAsset } from '../core/assets';
 
 const DB_NAME = 'asndajfs';
 const DB_VERSION = 1;
@@ -107,39 +108,6 @@ async function getLatestProjects(limit = 20) {
 	return projects;
 }
 
-export function mergeDicts<T extends Record<string, any>>(first: T, second: Partial<T>): T {
-	const result: any = {};
-
-	for (const key in first) {
-		if (key in second) {
-			const firstVal = first[key];
-			const secondVal = second[key];
-
-			if (
-				firstVal !== null &&
-                typeof firstVal === 'object' &&
-                !Array.isArray(firstVal) &&
-                secondVal !== null &&
-                typeof secondVal === 'object' &&
-                !Array.isArray(secondVal)
-			) {
-				result[key] = mergeDicts(firstVal, secondVal as any);
-			} else {
-				result[key] = secondVal;
-			}
-		} else {
-			result[key] = first[key];
-		}
-	}
-
-	for(const key in second) {
-		if (!(key in first)) {
-			result[key] = second[key];
-		}
-	}
-
-	return result;
-}
 
 async function loadProject(uid: string) {
 	const db = await dbPromise;

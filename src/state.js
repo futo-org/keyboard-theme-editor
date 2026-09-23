@@ -1,7 +1,8 @@
 import { Persistence } from './db';
 import Ev from './event';
-import { DEFAULT_THEME } from './keyboard/types/Theme';
-import AssetStore, { genUniqueName } from './systems/assets';
+import { DEFAULT_THEME } from '../core/keyboard/types/Theme';
+import AssetStore from './systems/assets';
+import { genUniqueName } from '../core/assets';
 
 let uniqueCounter = 0;
 const State = {
