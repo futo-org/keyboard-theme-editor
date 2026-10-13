@@ -56,9 +56,9 @@ export function RGBtoHSV(r: number | RGBType, g: number | undefined, b: number |
 
 	switch (max) {
 	case min: h = 0; break;
-	case r: h = (grn - blu) + d * (grn < blu ? 6: 0); h /= 6 * d; break;
-	case g: h = (blu - red) + d * 2; h /= 6 * d; break;
-	case b: h = (red - grn) + d * 4; h /= 6 * d; break;
+	case red: h = (grn - blu) + d * (grn < blu ? 6: 0); h /= 6 * d; break;
+	case grn: h = (blu - red) + d * 2; h /= 6 * d; break;
+	case blu: h = (red - grn) + d * 4; h /= 6 * d; break;
 
 		// unreachable
 	default: h = 0; break;
