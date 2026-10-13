@@ -3,6 +3,7 @@ import State from "../state";
 import WorkCanvas from './workcanvas';
 import { colorField } from "./colors";
 import AssetStore from "../systems/assets";
+import { checkImageSizeOk } from "./assets";
 
 const AssetConfigPanel = {
 	build: buildAssetConfigPanel
@@ -160,7 +161,10 @@ function replaceAssetOption() {
 	const replaceAsset = (file) => {
 		const fname = State.editingAsset;
 		if(!fname) return;
-		AssetStore.update(fname, file);
+
+		checkImageSizeOk(file, AssetStore.store[fname].meta.kind).then(() => {
+			AssetStore.update(fname, file);
+		}).catch(alert)
 	}
 
 	let inputEl;

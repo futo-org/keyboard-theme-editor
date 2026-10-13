@@ -5,6 +5,7 @@ import HistoryPanel from './history';
 import WorkCanvas from './workcanvas';
 import MetadataPanel from "./metadata";
 import AssetStore from "../systems/assets";
+import { getFileType } from "../../core/assets";
 
 const AssetsPanel = {
 	build: makeAssetsPanel,
@@ -24,6 +25,40 @@ export function openFilePickerWithKind(kind) {
 	Ui.id.picker.accept = (kind === "other") ? "image/*,font/*,.ttf,.otf" : "image/*";
 	Ui.id.picker.click();
 }
+
+export const imageSizeLimits = {
+	"background": 360,
+	"icon": 360,
+	"other": 2048
+};
+
+export const checkImageSizeOk = (file, kind) => new Promise((resolve, reject) => {
+	if(kind === "other") {
+		if(getFileType(file.name) !== "image") {
+			resolve();
+			return;
+		}
+	}
+	const limit = imageSizeLimits[kind];
+
+	const reader = new FileReader();
+	reader.onload = () => {
+		const img = new Image();
+		img.onload = () => {
+			const px = img.width * img.height;
+
+			if(px > (limit*limit)) {
+				reject(`Image is too big! Must not exceed the area of ${limit}px x ${limit}px`)
+			} else {
+				resolve(true);
+			}
+		}
+		img.onerror = () => reject("Failed to load image");
+		img.src = reader.result;
+	}
+	reader.onerror = () => reject("Failed to read file");
+	reader.readAsDataURL(file);
+});
 
 function assetContent() {
 	const fileElems = {};
@@ -130,12 +165,16 @@ function assetContent() {
 		<input id="picker" type="file" accept="image/*" style="display: none;"
 			onchange={(e) => {
 				const file = e.target.files[0];
+
+				if(!file) return;
+
+				const kind = AssetsPanel.lastPickerKind;
 				const split = file.name.toLowerCase().split('.');
 				const extension = split[split.length - 1];
 
 				const allowedExtensions = ["png", "webp"];
 
-				if(AssetsPanel.lastPickerKind === "other") {
+				if(kind === "other") {
 					allowedExtensions.push("ttf");
 					allowedExtensions.push("otf");
 					allowedExtensions.push("jpg");
@@ -143,10 +182,12 @@ function assetContent() {
 				}
 
 				if(allowedExtensions.indexOf(extension) === -1) {
-					const readableName = AssetsPanel.lastPickerKind === "background" ? "border" : AssetsPanel.lastPickerKind;
+					const readableName = kind === "background" ? "border" : kind;
 					alert(`The file extension ${extension} is not in the supported list for ${readableName}: ${allowedExtensions}`);
 				} else {
-					AssetStore.add(file, AssetsPanel.lastPickerKind);
+					checkImageSizeOk(file, kind).then(() => {
+						AssetStore.add(file, kind);
+					}).catch(alert);
 				}
 			}}
 		/>

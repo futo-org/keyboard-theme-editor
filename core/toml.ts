@@ -4,10 +4,14 @@ import { UZIP } from "./vendor/UZIP";
 import * as TOML from 'smol-toml';
 import { AssetMeta, BackgroundAsset, DefaultAssets, genUniqueName, getFileType, IconAsset, OtherAsset } from "./assets";
 
-export function importToml(file: ArrayBuffer) {
+export function importToml(file: ArrayBuffer, allowErrors: boolean) {
 	if(file === undefined) throw new Error("Undefined file!");
 
 	const fdata = (UZIP as any).parse(file);
+
+	if(!allowErrors && fdata["errors.txt"]) {
+		throw new Error("Theme export had errors and cannot be used. Please resolve the errors and re-export.")
+	}
 
 	const tomlData = fdata["theme.txt"] ?? fdata["theme.toml"];
 	if(!tomlData) {

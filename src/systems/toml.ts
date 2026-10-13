@@ -16,7 +16,7 @@ export function openTomlImportPicker() {
 			const reader = new FileReader();
 			reader.onload = () => {
 				try {
-					const { newTheme, newStore } = importToml(reader.result as ArrayBuffer);
+					const { newTheme, newStore } = importToml(reader.result as ArrayBuffer, true);
 
 					for(const v of Object.values(newStore)) {
 						if(v[0].kind === "background") {

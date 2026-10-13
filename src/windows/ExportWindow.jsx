@@ -7,6 +7,7 @@ import AssetStore from "../systems/assets";
 import Ui from "../ui"
 import { UZIP } from "../../core/vendor/UZIP";
 import { buildMetadataPanel } from "../panels/metadata";
+import { imageSizeLimits } from "../panels/assets";
 
 function formatBytes(bytes, decimals = 1) {
 	if (bytes === 0) return '0 Bytes';
@@ -213,6 +214,19 @@ function exportWindowContents() {
 
 		const name = v.meta.name.toLowerCase();
 		if(v.meta.type === "image") {
+			if(v.runtime.img) {
+				const area = v.runtime.img.width * v.runtime.img.height;
+				const limit = imageSizeLimits[v.meta.kind];
+
+				if(area > limit * limit) {
+					warnings.push({
+						preview: v.runtime.preview,
+						message: `Asset ${v.meta.name} is too big (size ${v.runtime.img.width} x ${v.runtime.img.height}, max area limit ${limit} x ${limit}). Skipping. There may be subsequent errors as a result of this.`
+					});
+					continue;
+				}
+			}
+
 			// TODO: Verify blob MIME matches extension
 			if(!name.endsWith(".png") && !name.endsWith(".jpg") && !name.endsWith(".jpeg") && !name.endsWith(".webp")) {
 				warnings.push({
@@ -577,11 +591,17 @@ function exportWindowContents() {
 						alert("Please resolve the metadata errors before exporting!");
 						return;
 					} else if((warnings.length - uncriticalErrors) > 0 && !forceExport) {
-						alert("Please resolve the errors before exporting. Hit export again to force an export.")
+						alert("Please resolve the errors before exporting. Hit export again to force lossy export with errors")
 						forceExport = true;
+						return;
 					}
 					const obj = {};
 					obj["theme.txt"] = (new TextEncoder()).encode(makeToml(clean, assets));
+
+					const importantWarnings = warnings.filter((v) => !v.message.includes("is unused and will not be included"));
+					if(importantWarnings.length > 0) {
+						obj["errors.txt"] = (new TextEncoder()).encode(importantWarnings.map((v) => v.message).join("\n"));
+					}
 
 					const promises = [];
 					Object.keys(assets).forEach((k) => {

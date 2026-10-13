@@ -14,13 +14,17 @@ module.exports = {
 	generateScreenshot: (file, layoutName) => new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onload = () => {
-			const { newTheme, newStore } = ThemeCore.importToml(reader.result);
-			ThemeCore.assetStoreOnceOff(newStore).then((store) => {
-				flattenDynamicColors(newTheme, store);
-				ThemeCore.drawThemeOnceOff(newTheme, Layouts[layoutName ?? "QWERTY"], store).then((blob) => {
-					resolve(blob);
+			try {
+				const { newTheme, newStore } = importToml(reader.result, false);
+				assetStoreOnceOff(newStore).then((store) => {
+					flattenDynamicColors(newTheme, store);
+					drawThemeOnceOff(newTheme, Layouts[layoutName ?? "QWERTY"], store).then((blob) => {
+						resolve(blob);
+					}).catch(reject);
 				}).catch(reject);
-			}).catch(reject);
+			} catch(err) {
+				reject(err);
+			}
 		}
 		reader.onerror = reject;
 		reader.readAsArrayBuffer(file);
