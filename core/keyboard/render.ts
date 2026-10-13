@@ -151,7 +151,7 @@ function drawKeyForeground(store: IAssetStore, ctx: CanvasRenderingContext2D | O
 	}
 }
 
-function drawKeyHighlight(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, key: EnrichedKey, theme: Theme, layout: EnrichedLayout) {
+function drawQualifierHighlight(ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, key: {drawX: number, y: number, width: number, height: number}, layout: EnrichedLayout) {
 	const radius = dp(9, layout.density);
 
 	ctx.strokeStyle = "#00FFFF";
@@ -172,7 +172,7 @@ function lookupFillStyles(key: EnrichedKey, theme: Theme, lookup: boolean) {
 		Action: {borders: ["primary", "onPrimary"], noborders: ["primary", "onPrimary"]},
 		Normal: {borders: ["keyboardContainer", "onKeyboardContainer"], noborders: ["", "onBackground"]},
 		Functional: {borders: ["keyboardContainerVariant", "onKeyboardContainer"], noborders: ["", "onBackground"]},
-		Spacebar: {borders: ["keyboardContainer", "onKeyboardContainer"], noborders: ["keyboardContainerPressed", "onBackground"]},
+		Spacebar: {borders: ["keyboardContainer", "onKeyboardContainer"], noborders: ["keyboardContainerPressed", "onBackground"]}
 	};
 
 	const fallbackStyle = {borders: ["", "onBackground"], noborders: ["", "onBackground"]};
@@ -185,6 +185,11 @@ function lookupFillStyles(key: EnrichedKey, theme: Theme, lookup: boolean) {
 		radius: 9,
 		highlightOnPress: true
 	};
+
+	if(key.visualStyle === "MoreKey" && key.pressed) {
+		names = key.pressed ? ["primary", "onPrimary"] : ["", "onKeyboardContainer"];
+		result.highlightOnPress = false;
+	}
 
 	if(key.visualStyle === "Action") {
 		result.highlightOnPress = false;
@@ -332,6 +337,169 @@ function renderActionBar(store: IAssetStore, ctx: CanvasRenderingContext2D | Off
 	if(mic) drawTintedImage(ctx, mic, layout.width - dpl(20) - iconSize / 2, height / 2 - iconSize / 2, iconSize, iconSize, theme.colors.onKeyboardContainer);
 }
 
+
+const combiningMarks = [
+	["\u0300", "\u0301", "\u0302", "\u0303", "\u0304", " "],
+	["\u0306", "\u0307", "\u0308", "\u0309", "\u030A", "\u030C"],
+];
+
+const forcedMoreKeys = {
+	"q": [["1"]],
+	"w": [["2"]],
+	"e": [["ē", "ê", "ë"], ["è", " 3", "é"]],
+	"r": [["4"]],
+	"t": [["5"]],
+	"y": [["6", ">"]],
+	"u": [["ū", "ü", "ù"], ["û", " 7", "ú"]],
+	"i": [["ì", "ï", "ī"], ["î", " 8", "í"]], 
+	"o": [[" ", "õ", "ō", "ø", "œ"], ["ò", "ö", "ô", "ó", " 9"]],
+	"p": [["0"]],
+	
+	"a": ["ä æ ã å ā".split(" "), "@ [] à á â".split(" ")],
+	"s": ["# ß".split(" ")],
+	"d": [["$"]],
+	"f": [["%"]],
+	"g": [["&", "|"]],
+	"h": [["—", " -", "–", "_"]],
+	"j": [["+", "="]],
+	"k": [["<", "{", " (", "["]],
+	"l": [[">", "}", "]", " )"]],
+
+	"z": combiningMarks,
+	"x": [["\""]],
+	"c": combiningMarks,
+	"v": [[":"]],
+	"b": [[";"]],
+	"n": combiningMarks,
+	"m": [["?", "/"]],
+
+	".": ["& % + \" - : ' @".split(" "), [";", "/", "(", ")", "#", "!", " ,", "?"]]
+};
+
+interface MoreKeysLayout {
+	key: EnrichedKey;
+	layout: EnrichedLayout;
+	drawBox: (ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, backgrounds: Array<[ParsedQualifiers, NinePatch]>, theme: Theme) => void;
+	drawX: number;
+	y: number;
+	width: number;
+	height: number;
+}
+
+function selectorMatchesMoreKeysBox(selector: ParsedQualifiers, layout: EnrichedLayout) {
+	const filtered = selector.filter((v) => v.token !== "morekeysbox")
+	if(filtered.length == selector.length) return false;
+
+	const onlyLayouts = filtered.filter((v) => v.token === "layout");
+	if(onlyLayouts.length !== filtered.length) return false;
+
+	for(const v of onlyLayouts) {
+		if(!v.fn) continue;
+		if(!v.fn(undefined as any, layout)) return false;
+	}
+	return true;
+}
+
+function buildMoreKeysLayout(key: EnrichedKey, layout: EnrichedLayout): MoreKeysLayout {
+	const tableForKey = (forcedMoreKeys as any)[key.label] ?? combiningMarks;
+	
+	const moreKeysBoxWidth = layout.mostCommonKeyWidth * Math.max(...tableForKey.map((v) => v.length));
+	const moreKeysBoxHeight = layout.mostCommonKeyHeight * tableForKey.length;
+
+	const moreKeysBoxY = key.y - moreKeysBoxHeight;
+	let moreKeysBoxX = key.drawX;
+
+	let pressedColumn = tableForKey[tableForKey.length - 1].findIndex((v: string) => v !== " " && v.startsWith(" "));
+	if(pressedColumn > 0) {
+		moreKeysBoxX -= (layout.mostCommonKeyWidth * pressedColumn)
+	} else {
+		//may be -1
+		pressedColumn = 0; 
+	}
+
+	// force within layout area
+	while(moreKeysBoxX + moreKeysBoxWidth > layout.width) {
+		moreKeysBoxX -= layout.mostCommonKeyWidth;
+		pressedColumn += 1;
+	}
+
+	const drawBox = (ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D, backgrounds: Array<[ParsedQualifiers, NinePatch]>, theme: Theme) => {
+		let boxDrawn = false;
+		for (const v of backgrounds) {
+			if(selectorMatchesMoreKeysBox(v[0], layout)) {
+				drawNinePatch(ctx, v[1], moreKeysBoxX, moreKeysBoxY, moreKeysBoxWidth, moreKeysBoxHeight);
+				boxDrawn = true;
+				break;
+			}
+		}
+
+		if(!boxDrawn) {
+			ctx.fillStyle = theme.colors.keyboardPress;
+			ctx.beginPath();
+			ctx.roundRect(moreKeysBoxX, moreKeysBoxY, moreKeysBoxWidth, moreKeysBoxHeight,
+				dp(9, layout.density) * theme.options.roundedness);
+			ctx.fill();
+		}
+	}
+
+	let row = 0;
+
+	const moreKeys = [];
+
+	for(const line of tableForKey) {
+		let column = 0;
+		for(const mark of line) {
+			const currentX = moreKeysBoxX + column * layout.mostCommonKeyWidth;
+			const currentY = moreKeysBoxY + row * layout.mostCommonKeyHeight;
+			const label = (tableForKey === combiningMarks) ? (key.label + mark) : (mark.replaceAll(" ", ""));
+
+			if(label !== "" && mark !== " ") {
+				const moreKey: EnrichedKey = {
+					hitbox: [currentX,currentY,currentX+layout.mostCommonKeyWidth,currentY+layout.mostCommonKeyHeight],
+					drawX: currentX,
+					y: currentY,
+					x: currentX,
+					width: layout.mostCommonKeyWidth,
+					height: layout.mostCommonKeyHeight,
+					verticalGap: 0,
+					horizontalGap: 0,
+					visualStyle: 'MoreKey',
+
+					iconId: '',
+					labelFlags: 0x80,
+					actionFlags: 0,
+					label: label,
+					hintLabel: '',
+
+					pressed: column == pressedColumn && row == (tableForKey.length-1),
+
+					// todo: is this a mistake in futo keyboard?
+					row: column,
+					column: row,
+				};
+				moreKeys.push(moreKey);
+			}
+			column += 1;
+		}
+		row += 1;
+	}
+
+	const moreKeysLayout = structuredClone(layout);
+	moreKeysLayout.keys = moreKeys;
+
+	return {
+		key,
+		drawBox,
+		layout: moreKeysLayout,
+
+		drawX: moreKeysBoxX,
+		y: moreKeysBoxY,
+		width: moreKeysBoxWidth,
+		height: moreKeysBoxHeight
+	};
+}
+
+
 function render({store, ctx, theme, currBgs, currIcons, layout, previewSelector} : {
 	store: IAssetStore,
 	ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -393,50 +561,53 @@ function render({store, ctx, theme, currBgs, currIcons, layout, previewSelector}
 	const layerList = [...layers];
 	layerList.sort();
 
-	for(const layer of layerList) {
-		const bgs = currBgs.filter((v) => {
-			const bgLayer = v[0].map((v) => v.layer).filter((v) => v !== undefined)[0];
-			return (bgLayer === layer) || (layer === 0 && bgLayer === undefined);
-		});
+	const renderLayout = (layout: EnrichedLayout) => {
+		for(const layer of layerList) {
+			const bgs = currBgs.filter((v) => {
+				const bgLayer = v[0].map((v) => v.layer).filter((v) => v !== undefined)[0];
+				return (bgLayer === layer) || (layer === 0 && bgLayer === undefined);
+			});
 
 
-		for (const key of layout.keys) {
+			for (const key of layout.keys) {
+				let x = key.drawX;
+				let y = key.y;
+				let w = key.width;
+				let h = key.height;
+				let fgCol = undefined;
+				let padding = undefined;
+				for(const v of bgs) {
+					if(matchesKey(v[0], key, layout)) {
 
-			let x = key.drawX;
-			let y = key.y;
-			let w = key.width;
-			let h = key.height;
-			let fgCol = undefined;
-			let padding = undefined;
-			for(const v of bgs) {
-				if(matchesKey(v[0], key, layout)) {
+						const gap = v[1].gap;
+						if(gap && (gap.left !== 1 || gap.right !== 1 || gap.top !== 1 || gap.bottom !== 1)) {
+							x = key.x + (key.horizontalGap / 2) * gap.left;
+							w = key.width - (key.horizontalGap / 2 * (gap.left + gap.right - 2));
 
-					const gap = v[1].gap;
-					if(gap && (gap.left !== 1 || gap.right !== 1 || gap.top !== 1 || gap.bottom !== 1)) {
-						x = key.x + (key.horizontalGap / 2) * gap.left;
-						w = key.width - (key.horizontalGap / 2 * (gap.left + gap.right - 2));
+							y = key.y + (key.verticalGap / 2) * (gap.top - 1);
+							h = key.height - (key.verticalGap / 2 * (gap.top + gap.bottom - 2));
+						}
 
-						y = key.y + (key.verticalGap / 2) * (gap.top - 1);
-						h = key.height - (key.verticalGap / 2 * (gap.top + gap.bottom - 2));
+						drawNinePatch(ctx, v[1], x, y, w, h);
+						fgCol = v[1].foreground;
+						padding = v[1].padding;
+						break;
 					}
-
-					drawNinePatch(ctx, v[1], x, y, w, h);
-					fgCol = v[1].foreground;
-					padding = v[1].padding;
-					break;
 				}
-			}
 
-			if(fgCol === undefined && layer === 0) {
-				fgCol = drawFallbackBackground(ctx, key, theme, layout);
-			}
+				if(fgCol === undefined && layer === 0) {
+					fgCol = drawFallbackBackground(ctx, key, theme, layout);
+				}
 
-			if(fgCol !== undefined && HEXtoRGB(fgCol).a != 0) {
-				drawKeyForeground(store, ctx, currIcons, key, fgCol, hintCol, 0, layout, padding, theme.options, x, y, w, h);
+				if(fgCol !== undefined && HEXtoRGB(fgCol).a != 0) {
+					drawKeyForeground(store, ctx, currIcons, key, fgCol, hintCol, 0, layout, padding, theme.options, x, y, w, h);
+				}
 			}
 		}
 	}
-
+	renderLayout(layout);
+	
+	// pressed popup
 	for (const key of layout.pressedKeys) {
 		if ((key.actionFlags & 0x02) === 0x02) continue;
 		let bgDrawn = false;
@@ -461,13 +632,27 @@ function render({store, ctx, theme, currBgs, currIcons, layout, previewSelector}
 		}
 	}
 
+	// morekeys
+	const layouts = [layout];
+	if(layout.moreKeys) {
+		layout.moreKeys.drawBox(ctx, currBgs, theme);
+		renderLayout(layout.moreKeys.layout);
+		layouts.push(layout.moreKeys.layout);
+	}
+
 	if(previewSelector) {
 		const parsed = parseQualifiers(previewSelector);
 		if(parsed) {
-			for(const key of layout.keys) {
-				if(matchesKey(parsed, key, layout)) {
-					drawKeyHighlight(ctx, key, theme, layout);
+			for(const layout of layouts) {
+				for(const key of layout.keys) {
+					if(matchesKey(parsed, key, layout)) {
+						drawQualifierHighlight(ctx, key, layout);
+					}
 				}
+			}
+
+			if(layout.moreKeys && selectorMatchesMoreKeysBox(parsed, layout)) {
+				drawQualifierHighlight(ctx, layout.moreKeys, layout);
 			}
 		}
 	}
@@ -483,6 +668,7 @@ export interface RenderContext {
 	onmouseup?: () => void;
 	loadingFont?: string;
 	assetStore?: IAssetStore;
+	prevPressTimeout: number | undefined;
 }
 
 
@@ -496,6 +682,7 @@ type Key = {
 	verticalGap: number;
 	horizontalGap: number;
 	row: number;
+	column: number;
 	visualStyle: string;
 	iconId: string;
 	labelFlags: number;
@@ -515,6 +702,7 @@ type EnrichedKey = {
 	verticalGap: number;
 	horizontalGap: number;
 	row: number;
+	column: number;
 	visualStyle: string;
 	iconId: string;
 	labelFlags: number;
@@ -553,6 +741,7 @@ interface EnrichedLayout {
 	drawXCorrected: boolean;
 	hitboxAdded: boolean;
 	pressedKeys: Array<EnrichedKey>;
+	moreKeys: MoreKeysLayout | undefined;
 	mostCommonKeyWidth: number;
 	mostCommonKeyHeight: number;
 	verticalGap: number;
@@ -644,7 +833,8 @@ const styleElement = document.createElement("style");
 export function initRenderContext(refresh: () => void): RenderContext {
 	return { backgrounds: [], icons: [], refresh, registeredInput: false, theme: undefined,
 		onmousedown: undefined,
-		onmouseup: undefined
+		onmouseup: undefined,
+		prevPressTimeout: undefined
 	};
 }
 
@@ -652,7 +842,17 @@ function renderContextDetectKey(rc: RenderContext, canvas: HTMLCanvasElement | O
 	const x = normX * canvas.width;
 	const y = normY * canvas.height;
 
-	for (const key of enrichLayout(layout).keys) {
+	const layout2 = enrichLayout(layout);
+
+	if(layout2.moreKeys) {
+		for (const key of layout2.moreKeys.layout.keys) {
+			if (key.hitbox[0] < x && key.hitbox[2] > x && key.hitbox[1] < y && key.hitbox[3] > y) {
+				return key;
+			}
+		}
+	}
+
+	for (const key of layout2.keys) {
 		if (key.hitbox[0] < x && key.hitbox[2] > x && key.hitbox[1] < y && key.hitbox[3] > y) {
 			return key;
 		}
@@ -663,6 +863,8 @@ function renderContextDetectKey(rc: RenderContext, canvas: HTMLCanvasElement | O
 
 function registerCanvasInput(rc: RenderContext, canvas: HTMLCanvasElement | OffscreenCanvas, layout: EnrichedLayout) {
 	rc.onmousedown = (normX: number, normY: number) => {
+		clearTimeout(rc.prevPressTimeout);
+		layout.moreKeys = undefined;
 		const key = renderContextDetectKey(rc, canvas, layout, normX, normY);
 		if(key) {
 			key.pressed = true;
@@ -670,6 +872,17 @@ function registerCanvasInput(rc: RenderContext, canvas: HTMLCanvasElement | Offs
 		}
 
 		rc.refresh();
+
+		if(key && key.label in forcedMoreKeys) {
+			rc.prevPressTimeout = setTimeout(() => {
+				if(layout.pressedKeys.length === 1 && layout.pressedKeys[0] === key && key.pressed === true) {
+					key.pressed = false;
+					layout.pressedKeys.length = 0;
+					layout.moreKeys = buildMoreKeysLayout(key, layout);
+					rc.refresh();
+				}
+			}, 750);
+		}
 	};
 
 	rc.onmouseup = () => {

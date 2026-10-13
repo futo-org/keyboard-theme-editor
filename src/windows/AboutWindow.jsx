@@ -52,7 +52,14 @@ function aboutWindowContents() {
 			<li><code>popup</code> - Matches the key popup, which is there for alphabet letters on QWERTY</li>
 			<li><code>pressed</code> - Matches if key is currently pressed if popups are disabled, either by the user in settings, or by the key itself (e.g. functional keys like spacebar, backspace, numpad keys)</li>
 		</ul>
-		<p>There currently isn't a preview for moreKeys. You will need to preview this in the actual keyboard.</p>
+
+		<p>Long-press a key with the arrow pointer tool to preview morekeys. You will probably need to add these rules! Test with keys "q" or "d" to see just one morekey, "k" or "l" to see a few on one line, and "a", "z", "." to see many with two lines. The morekeys will remain open until you tap a key again.</p>
+		<ul>
+			<li><code>morekeysbox</code> - The box drawn behind the morekeys</li>
+			<li><code>morekey</code> - The background for a morekey (common: transparent background, or same as morekeysbox)</li>
+			<li><code>morekey pressed</code> - The currently selected morekey (should be bright and visible against morekeysbox and morekey)</li>
+			<li>If you're not using matchrules, then <code>keyboardPress</code> is the background for the box, <code>onKeyboardContainer</code> are the unfocused keys, and <code>primary/onPrimary</code> is the focused key.</li>
+		</ul>
 	</div>
 }
 

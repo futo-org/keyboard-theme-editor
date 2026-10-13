@@ -176,24 +176,31 @@ export function suggestQualifiersForKey(kb, key) {
 
 	const suggestedCol = (key.column < colCount/2) ? key.column : (key.column - colCount - 1);
 
-	suggestions.push(`${kind} row ${key.row}`);
-	suggestions.push(`${kind} row ${key.row - rowCount - 1}`);
-	suggestions.push(`${kind} col ${suggestedCol}`);
-	suggestions.push(`col ${suggestedCol}`);
-	suggestions.push(`${kind} row ${key.row} col ${suggestedCol}`);
-	suggestions.push(`${kind} row ${key.row - rowCount - 1} col ${suggestedCol}`);
+	if(kind !== "morekey") {
+		suggestions.push(`${kind} row ${key.row}`);
+		suggestions.push(`${kind} row ${key.row - rowCount - 1}`);
+		suggestions.push(`${kind} col ${suggestedCol}`);
+		suggestions.push(`col ${suggestedCol}`);
+		suggestions.push(`${kind} row ${key.row} col ${suggestedCol}`);
+		suggestions.push(`${kind} row ${key.row - rowCount - 1} col ${suggestedCol}`);
 
-	suggestions.push(`${kind} row ${key.row} colmod ${-(key.column % 2)} 2`);
-	suggestions.push(`${kind} row ${key.row} colmod ${-(key.column % 3)} 3`);
-	suggestions.push(`${kind} row ${key.row} colmod ${-(key.column % 4)} 4`);
+		suggestions.push(`${kind} row ${key.row} colmod ${-(key.column % 2)} 2`);
+		suggestions.push(`${kind} row ${key.row} colmod ${-(key.column % 3)} 3`);
+		suggestions.push(`${kind} row ${key.row} colmod ${-(key.column % 4)} 4`);
 
-	suggestions.push(`${kind} rowmod ${-(key.row % 2)} 2 colmod ${-(key.column % 2)} 2`);
+		suggestions.push(`${kind} rowmod ${-(key.row % 2)} 2 colmod ${-(key.column % 2)} 2`);
 
-	if(key.iconId) {
-		suggestions.push(`icon ${key.iconId}`);
-	}
+		if(key.iconId) {
+			suggestions.push(`icon ${key.iconId}`);
+		}
 
-	if(key.label) {
+		if(key.label) {
+			suggestions.push(`${kind} layout ${kb.name} label ${key.label}`);
+		}
+	} else {
+		suggestions.push(`${kind} row ${key.row}`);
+		suggestions.push(`${kind} col ${key.column}`);
+		suggestions.push(`${kind} row ${key.row} col ${key.column}`);
 		suggestions.push(`${kind} layout ${kb.name} label ${key.label}`);
 	}
 
