@@ -205,10 +205,10 @@ export function importToml(file: ArrayBuffer) {
 			}
 		}
 
-		if(data.options?.background?.opacity)
+		if(data.options?.background?.opacity !== undefined)
 			newTheme.assets.background.opacity = data.options?.background?.opacity;
 
-		if(data.options?.background?.action_bar_opacity)
+		if(data.options?.background?.action_bar_opacity !== undefined)
 			newTheme.assets.background.actionBarOpacity = data.options?.background?.action_bar_opacity;
 	}
 
