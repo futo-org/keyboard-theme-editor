@@ -1,9 +1,10 @@
+import { BackgroundAsset } from "../../core/assets";
 import { importToml } from "../../core/toml";
 import AssetStore from "./assets";
 
 export function openTomlImportPicker() {
 	if(State.isDirty()) {
-		alert("Note: The current project will be replaced if you proceed. You may want to save it first.");
+		alert("Note: The current project will be replaced if you proceed. You may want to cancel then save it first.");
 	}
 
 	const input = document.createElement('input');
@@ -17,6 +18,21 @@ export function openTomlImportPicker() {
 				try {
 					const { newTheme, newStore } = importToml(reader.result as ArrayBuffer);
 
+					for(const v of Object.values(newStore)) {
+						if(v[0].kind === "background") {
+							const info = v[1] as BackgroundAsset;
+							if(info.backgroundToken.startsWith("system_") || info.foregroundToken.startsWith("system_")) {
+								throw new Error("Themes with dynamic colors aren't supported for editing yet");
+							}
+						}
+					}
+
+					for(const v of Object.values(newTheme.colors)) {
+						if(v.startsWith("system_")) {
+							throw new Error("Themes with dynamic colors aren't supported for editing yet");
+						}
+					}
+					
 					State.newProject("load", () => {
 						State.theme = newTheme;
 
