@@ -184,7 +184,6 @@ const isValidVer = s => /^\d+$/.test(s);
 
 
 function exportWindowContents() {
-	let uncriticalErrors = 0;
 	let warnings = [];
 	const usedAssetNames = [];
 
@@ -332,14 +331,15 @@ function exportWindowContents() {
 	if(layerSet.size > 3) {
 		warnings.push({
 			style: "opacity:0",
-			message: `There are more than 3 layers used in total (${layerSet.size} layers). Please reduce this number if possible. Using layers may make your theme more laggy.`
+			message: `There are more than 3 layers used in total (${layerSet.size} layers). Please reduce this number if possible. Using layers may make your theme more laggy.`,
+			ignorableForExportError: true
 		});
 	} else if(layerSet.size > 1) {
 		warnings.push({
 			style: "opacity:0",
-			message: `Using layers may make your theme more laggy, consider carefully whether to use them.`
+			message: `Using layers may make your theme more laggy, consider carefully whether to use them.`,
+			ignorableForExportError: true
 		});
-		uncriticalErrors += 1;
 	}
 
 	clean.assets.icon = clean.assets.icon.filter((v) => {
@@ -376,9 +376,9 @@ function exportWindowContents() {
 		if(idx == -1) {
 			warnings.push({
 				preview: assets[v].runtime.preview,
-				message: `Asset ${assets[v].meta.name} is unused and will not be included.`
+				message: `Asset ${assets[v].meta.name} is unused and will not be included.`,
+				ignorableForExportError: true
 			});
-			uncriticalErrors += 1;
 			return true;
 		} else {
 			return false;
@@ -587,18 +587,19 @@ function exportWindowContents() {
 					Ui.closeWindow(ExportWindow);
 				}}>Cancel</button>
 				<button explicit onclick={_ev => {
+					const importantWarnings = warnings.filter((v) => v.ignorableForExportError !== true);
+
 					if(metadataError) {
 						alert("Please resolve the metadata errors before exporting!");
 						return;
-					} else if((warnings.length - uncriticalErrors) > 0 && !forceExport) {
+					} else if(importantWarnings.length > 0 && !forceExport) {
 						alert("Please resolve the errors before exporting. Hit export again to force lossy export with errors")
 						forceExport = true;
 						return;
 					}
 					const obj = {};
 					obj["theme.txt"] = (new TextEncoder()).encode(makeToml(clean, assets));
-
-					const importantWarnings = warnings.filter((v) => !v.message.includes("is unused and will not be included"));
+					
 					if(importantWarnings.length > 0) {
 						obj["errors.txt"] = (new TextEncoder()).encode(importantWarnings.map((v) => v.message).join("\n"));
 					}
