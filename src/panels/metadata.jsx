@@ -5,7 +5,7 @@ const EV_META_UPDATE = "metadataUpdated";
 
 function generateThemeId() {
 	const author = State.theme.author.toLowerCase().replace(/\s+/g, "");
-	const themeName = State.theme.name.replace(/(?:^|\s|_|\-)(\w)/g, (_, c) => c ? c.toUpperCase() : '');
+	const themeName = State.theme.name.replace(/(?:^|\s|_|-)(\w)/g, (_, c) => c ? c.toUpperCase() : '');
 	return `p.${author}.${themeName}`;
 }
 

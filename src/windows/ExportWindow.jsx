@@ -599,7 +599,7 @@ function exportWindowContents() {
 						const a = document.createElement('a');
 						a.href = url;
 
-						let zipName = clean.name.replace(/(?:^|\s|_|\-)(\w)/g, (_, c) => c ? c.toUpperCase() : '');
+						let zipName = clean.name.replace(/(?:^|\s|_|-)(\w)/g, (_, c) => c ? c.toUpperCase() : '');
 						if(!zipName.includes("Theme") && !zipName.includes("theme")) {
 							zipName = zipName + "Theme";
 						}
