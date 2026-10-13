@@ -2,7 +2,7 @@ import { DEFAULT_THEME } from '../core/keyboard/types/Theme';
 import State from './state';
 import { openDB } from "idb";
 import AssetStore from './systems/assets';
-import { AssetMeta, BackgroundAsset, IconAsset, OtherAsset } from '../core/assets';
+import { AssetMeta, BackgroundAsset, IconAsset, mergeDicts, OtherAsset } from '../core/assets';
 
 const DB_NAME = 'asndajfs';
 const DB_VERSION = 1;
