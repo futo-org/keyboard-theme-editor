@@ -20,6 +20,11 @@ const menu = [
 
 		{ name: "&Import theme...", enabled: () => true, action: () => { openTomlImportPicker() } },
 		{ name: "&Export theme...", shortcut: "Ctrl+E", enabled: loaded, action: () => Ui.showWindow(ExportWindow) },
+
+		{ name: "&Publish", enabled: loaded, action: () => {
+			alert("Export the theme, and then submit it here...");
+			open("https://keyboard-themes.futo.tech/themes/new");
+		} }
 	]},
 
 	// should move these to State
