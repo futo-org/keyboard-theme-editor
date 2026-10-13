@@ -1174,3 +1174,11 @@ div.replace-file-container.active {
 	font-size: 13px;
 	color: var(--fg-high);
 }
+
+a {
+	color: rgb(170, 200, 255);
+}
+
+a:visited {
+	color: rgb(231, 170, 255);
+}

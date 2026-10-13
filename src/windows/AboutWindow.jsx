@@ -10,17 +10,21 @@ function aboutWindowContents() {
 		<p>To set a keyboard background image, add an image to "Other assets", then drag it to Config &gt; Background Image</p>
 		<p>To change keyboard background color, edit keyboardSurface</p>
 		<p>To set a font, add a font to "Other assets", then drag it to Config &gt; Font</p>
-		<p>By default most colors are set to automatic, meaning they're derived from other colors. You can still change them manually.</p>
+		<p>By default most colors are set to automatic, meaning they're derived from other colors. You can still change them manually. It's recommended to keep them at auto as much as possible, since that normally ensures good color contrast.</p>
 		<p>Many colors come in pairs, for example primary and onPrimary. The "on" version defines the foreground color on that particular color.</p>
-		<p>To change all key colors, edit keyboardContainer in Colors. Also see onKeyboardContainer, keyboardContainerVariant and primary.</p>
+		<p>To change all key colors, edit keyboardContainer in Colors. Also see onKeyboardContainer, keyboardContainerVariant and primary. To change individual key colors, you'll need to use custom borders and matchrules.</p>
 		<p>To customize key borders, add border assets (or generate rectangle in Insert), add a matchrule, then drag the asset to matchrule. Instead of dragging you can also click on the left part of the matchrule to open a select window.</p>
 
 		<h2>Saving</h2>
 		<p>You can click File &gt; Save for an in-browser save. You should get an alert if it was successful.</p>
-		<p>Use File &gt; Export for an exported zip. Import is not yet implemented</p>
+		<p>Use File &gt; Export for an exported zip. You can also import a zip. This is useful to backup your theme in case your browser deletes site data.</p>
+
+		<h2>Exporting, publishing</h2>
+		<p>Make sure your theme has no errors before exporting, especially contrast errors. Also double-check the color preview that the UI colors make sense.</p>
+		<p>You can submit your theme for publishing at <a href="https://keyboard-themes.futo.tech/themes/new">https://keyboard-themes.futo.tech/themes/new</a>. You should test your theme in FUTO Keyboard before publishing to make sure there are no last-minute fixes needed, if you can.</p>
 
 		<h2>Borders and icons</h2>
-		<p>Your border assets should be fairly low resolution. As an example this one is 128x140</p>
+		<p>Your border assets should be fairly low resolution. As an example, this one is 128x140</p>
 		<img src="example_border.png" />
 		<p>You will need to {Ui.iconEl("sliders")} configure your border assets after adding, in particular set the foreground color.</p>
 		<p>We use <a href="https://en.wikipedia.org/wiki/9-slice_scaling?useskin=vector">9-slicing</a> to allow borders to support arbitrary key dimensions. You need to use the {Ui.iconEl("crop-simple")} crop tool to adjust the slice center when configuring the asset. Example:</p>
@@ -48,6 +52,7 @@ function aboutWindowContents() {
 			<li><code>popup</code> - Matches the key popup, which is there for alphabet letters on QWERTY</li>
 			<li><code>pressed</code> - Matches if key is currently pressed if popups are disabled, either by the user in settings, or by the key itself (e.g. functional keys like spacebar, backspace, numpad keys)</li>
 		</ul>
+		<p>There currently isn't a preview for moreKeys. You will need to preview this in the actual keyboard.</p>
 	</div>
 }
 
