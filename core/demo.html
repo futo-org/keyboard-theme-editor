@@ -10,22 +10,14 @@
   <img id="resultimg" />
   <script>
     document.getElementById("fileInput").oninput = (ev) => {
-        const file = ev.target.files[0];
-        if (file) {
-			const reader = new FileReader();
-			reader.onload = () => {
-                const { newTheme, newStore } = ThemeCore.importToml(reader.result);
-                console.log({ newTheme, newStore });
+      const file = ev.target.files[0];
 
-                // Note: this leaks createObjectURL rn
-                ThemeCore.assetStoreOnceOff(newStore).then((store) => {
-                    ThemeCore.drawThemeOnceOff(newTheme, ThemeCore.Layouts.QWERTY, store).then((blob) => {
-                        document.getElementById("resultimg").src = URL.createObjectURL(blob);
-                    })
-                });
-            }
-			reader.readAsArrayBuffer(file);
-        }
+      // Note: this leaks createObjectURLs internally rn
+      if(file) {
+        ThemeCore.generateScreenshot(file, "QWERTY").then((blob) => {
+            document.getElementById("resultimg").src = URL.createObjectURL(blob);
+        }).catch((err) => alert(err));
+      }
     }
   </script>
 </body>
