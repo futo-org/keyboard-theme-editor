@@ -6,6 +6,7 @@ import { colorPairs } from "../panels/assetconfig";
 import AssetStore from "../systems/assets";
 import Ui from "../ui"
 import { UZIP } from "../../core/vendor/UZIP";
+import { buildMetadataPanel } from "../panels/metadata";
 
 function formatBytes(bytes, decimals = 1) {
 	if (bytes === 0) return '0 Bytes';
@@ -77,7 +78,7 @@ name = ${s(theme.name)}
 author = ${s(theme.author)}
 id = ${s(theme.id)}
 version = ${theme.version}
-description = ${s(theme.description)}
+description = ${/*s(theme.description)*/'""'}
 `.trim());
 
 	add("\n[options]");
@@ -178,12 +179,12 @@ function isValidPackageName(str) {
 	return regex.test(str);
 }
 
-const isSemver = s => /^\d+(\.\d+)*(-\w+)?$/.test(s);
+const isValidVer = s => /^\d+$/.test(s);
 
 
 function exportWindowContents() {
-	let criticalError = false;
-	const warnings = [];
+	let uncriticalErrors = 0;
+	let warnings = [];
 	const usedAssetNames = [];
 
 	const assets = {};
@@ -324,6 +325,7 @@ function exportWindowContents() {
 			style: "opacity:0",
 			message: `Using layers may make your theme more laggy, consider carefully whether to use them.`
 		});
+		uncriticalErrors += 1;
 	}
 
 	clean.assets.icon = clean.assets.icon.filter((v) => {
@@ -362,6 +364,7 @@ function exportWindowContents() {
 				preview: assets[v].runtime.preview,
 				message: `Asset ${assets[v].meta.name} is unused and will not be included.`
 			});
+			uncriticalErrors += 1;
 			return true;
 		} else {
 			return false;
@@ -432,117 +435,185 @@ function exportWindowContents() {
 		}
 	});
 
-	if(clean.name.startsWith("Untitled Theme")
-		|| clean.id.startsWith("com.example.Theme")
-		|| clean.description.startsWith("This is a template FUTO Keyboard theme")
-		|| clean.author === "Anonymous"
-	) {
-		warnings.push({
-			style: "opacity:0",
-			message: `Please customize the metadata! Make sure the name, id, description, and author have been changed.`
-		});
+	const isMetadataError = () => {
+		warnings = warnings.filter((v) => v.metadataError !== true);
+
+		clean.name = State.theme.name;
+		clean.version = State.theme.version;
+		clean.author = State.theme.author;
+		clean.id = State.theme.id;
+		clean.description = State.theme.description;
+
+		if(!isValidVer(clean.version)) {
+			warnings.push({
+				style: "opacity:0",
+				message: `Make sure the version in metadata is an integer, for example 1, 2, 3...`,
+				metadataError: true,
+			});
+			return true;
+		} else if(parseInt(clean.version) < -2147483648 || parseInt(clean.version) > 2147483647) {
+			warnings.push({
+				style: "opacity:0",
+				message: `Make sure the version in metadata is within range of a 32-bit signed integer (between -2147483648 and 2147483647)`,
+				metadataError: true,
+			});
+			return true;
+		}
+
+		if(!isValidPackageName(clean.id)) {
+			warnings.push({
+				style: "opacity:0",
+				message: `The ID "${clean.id}" in metadata is invalid. It should use rDNS notation. Example: "p.alex1234.MyTheme" or "com.mywebsite.MyTheme"`,
+				metadataError: true,
+			});
+			return true;
+		}
+
+		if(clean.name.startsWith("Untitled Theme")) {
+			warnings.push({
+				style: "opacity:0",
+				message: `The name is still "Untitled Theme", please change it.`,
+				metadataError: true,
+			});
+			return true;
+		}
+
+		if(clean.author === "Anonymous") {
+			warnings.push({
+				style: "opacity:0",
+				message: `The author is still "Anonymous", please change it.`,
+				metadataError: true,
+			});
+			return true;
+		}
+
+		if(clean.id.startsWith("com.example")) {
+			warnings.push({
+				style: "opacity:0",
+				message: `The id starts with "com.example". Please try automatically picking a new one`,
+				metadataError: true,
+			});
+			return true;
+		}
+
+		return false;
 	}
 
-	if(clean.id.startsWith("com.example.Theme")) {
-		criticalError = true;
-	}
+	let metadataError = isMetadataError();
 
-	if(!isSemver(clean.version)) {
-		criticalError = true;
-		warnings.push({
-			style: "opacity:0",
-			message: `Make sure the version is a number, for example 1 or 2.5.1`
-		});
-	}
-
-
-	if(!isValidPackageName(clean.id)) {
-		criticalError = true;
-		warnings.push({
-			style: "opacity:0",
-			message: `The ID "${clean.id}" is invalid. It should use rDNS notation. Example: "com.mywebsite.MyTheme"`
-		});
-	}
+	const renderWarnings = () =>
+		warnings.map((v) =>
+			<div className="file">
+				<img src={v.preview} style={v.style ?? ""} />
+				<p>{v.message}</p>
+			</div>
+		)
+	const renderWarningsLabel = () => warnings.length > 0 ? "Please resolve these errors:" : "";
 
 	const local = {};
 	let pending = new Set();
 	let totalSize = 0;
+	let forceExport = false;
 	return Ui.namespaced(local, () => <div style="width: 400px; max-height: 700px; overflow: scroll; padding: 8px;">
-		<p>{warnings.length > 0 ? "Please resolve these errors:" : ""}</p>
-		<div id="warnings" className="">
-			{warnings.map((v) => {
-				return <div className="file">
-					<img src={v.preview} style={v.style ?? ""} />
-					<p>{v.message}</p>
-				</div>
-			})}
-		</div>
+		<p id="warningsLabel">{renderWarningsLabel()}</p>
+		<div id="warnings" className="">{renderWarnings()}</div>
 
-		<p>{Object.keys(assets).length} asset files will be included <span id="totalText"></span></p>
-		<div id="fileBreakdown" className="">
-			{Object.keys(assets).map((k) => {
-				const asset = assets[k];
-				return <div className="file">
-					<img src={asset.runtime.preview} />
-					<p>{asset.meta.name}</p>
-					<div style="flex: 1" />
-					<p oncreate={el => {
-						const blobUrl = assets[k].runtime.url;
-						pending.add(el);
-						fetch(blobUrl).then((response) => response.blob()).then((blob) => {
-							totalSize += blob.size;
-							el.innerText = formatBytes(blob.size);
-							el.parentElement.setAttribute("data-size", blob.size);
-							pending.delete(el);
-
-							if(pending.size === 0) {
-								local.totalText.innerText = `(total ${formatBytes(totalSize)} uncompressed)`;
-								el.parentElement.parentElement.replaceChildren(...Array.from(el.parentElement.parentElement.children).sort((b, a) => {
-									return (parseInt(a.getAttribute("data-size")) || 0) - (parseInt(b.getAttribute("data-size")) || 0)
-								}));
-							}
-						})
-					}}>...</p>
-				</div>
-			})}
-		</div>
-
-
-
-		<div className="action-buttons">
-			<button explicit onclick={_ev => {
-				Ui.closeWindow(ExportWindow);
-			}}>Cancel</button>
-			<button explicit onclick={_ev => {
-				if(criticalError) {
-					alert("Please resolve the metadata errors before exporting!");
-				}
-				const obj = {};
-				obj["theme.txt"] = (new TextEncoder()).encode(makeToml(clean, assets));
-
-				const promises = [];
-				Object.keys(assets).forEach((k) => {
-					const asset = assets[k];
-					promises.push(fetch(asset.runtime.url).then((v) => v.arrayBuffer()).then((buffer) => {
-						obj[asset.meta.name] = new Uint8Array(buffer);
-						return true
-					}));
-				});
-
-				Promise.all(promises).then(() => {
-					const zip = UZIP.encode(obj);
-					const blob = new Blob([zip], { type: 'application/zip' });
-					const url = URL.createObjectURL(blob);
-					const a = document.createElement('a');
-					a.href = url;
-					a.download = clean.id + ".zip";
-					document.body.appendChild(a);
-					a.click();
-					document.body.removeChild(a);
-					URL.revokeObjectURL(url);
+		{metadataError && <div id="metaPanel">
+			{buildMetadataPanel(false)}
+			<div className="action-buttons">
+				<button explicit onclick={_ev => {
 					Ui.closeWindow(ExportWindow);
-				});
-			}}>Export</button>
+				}}>Cancel</button>
+
+				<button explicit onclick={_ev => {
+					metadataError = isMetadataError();
+					console.log(warnings);
+					local.warningsLabel.innerText = renderWarningsLabel();
+					local.warnings.replaceChildren(...renderWarnings());
+					if(!metadataError) {
+						local.requiresNoError.style.display = "inherit";
+						local.metaPanel.innerHTML = "<p>Metadata issues resolved.</p>";
+					}
+				}}>Refresh</button>
+			</div>
+		</div>}
+
+		<div id="requiresNoError" style={metadataError ? "display: none" : ""}>
+			<p>{Object.keys(assets).length} asset files will be included <span id="totalText"></span></p>
+			<div id="fileBreakdown" className="">
+				{Object.keys(assets).map((k) => {
+					const asset = assets[k];
+					return <div className="file">
+						<img src={asset.runtime.preview} />
+						<p>{asset.meta.name}</p>
+						<div style="flex: 1" />
+						<p oncreate={el => {
+							const blobUrl = assets[k].runtime.url;
+							pending.add(el);
+							fetch(blobUrl).then((response) => response.blob()).then((blob) => {
+								totalSize += blob.size;
+								el.innerText = formatBytes(blob.size);
+								el.parentElement.setAttribute("data-size", blob.size);
+								pending.delete(el);
+
+								if(pending.size === 0) {
+									local.totalText.innerText = `(total ${formatBytes(totalSize)} uncompressed)`;
+									el.parentElement.parentElement.replaceChildren(...Array.from(el.parentElement.parentElement.children).sort((b, a) => {
+										return (parseInt(a.getAttribute("data-size")) || 0) - (parseInt(b.getAttribute("data-size")) || 0)
+									}));
+								}
+							})
+						}}>...</p>
+					</div>
+				})}
+			</div>
+
+			<div className="action-buttons">
+				<button explicit onclick={_ev => {
+					Ui.closeWindow(ExportWindow);
+				}}>Cancel</button>
+				<button explicit onclick={_ev => {
+					if(metadataError) {
+						alert("Please resolve the metadata errors before exporting!");
+						return;
+					} else if((warnings.length - uncriticalErrors) > 0 && !forceExport) {
+						alert("Please resolve the errors before exporting. Hit export again to force an export.")
+						forceExport = true;
+					}
+					const obj = {};
+					obj["theme.txt"] = (new TextEncoder()).encode(makeToml(clean, assets));
+
+					const promises = [];
+					Object.keys(assets).forEach((k) => {
+						const asset = assets[k];
+						promises.push(fetch(asset.runtime.url).then((v) => v.arrayBuffer()).then((buffer) => {
+							obj[asset.meta.name] = new Uint8Array(buffer);
+							return true
+						}));
+					});
+
+					Promise.all(promises).then(() => {
+						const zip = UZIP.encode(obj);
+						const blob = new Blob([zip], { type: 'application/zip' });
+						const url = URL.createObjectURL(blob);
+						const a = document.createElement('a');
+						a.href = url;
+
+						let zipName = clean.name.replace(/(?:^|\s|_|\-)(\w)/g, (_, c) => c ? c.toUpperCase() : '');
+						if(!zipName.includes("Theme") && !zipName.includes("theme")) {
+							zipName = zipName + "Theme";
+						}
+						zipName = zipName + ".zip";
+
+						a.download = zipName;
+						document.body.appendChild(a);
+						a.click();
+						document.body.removeChild(a);
+						URL.revokeObjectURL(url);
+						Ui.closeWindow(ExportWindow);
+					});
+				}}>Export</button>
+			</div>
 		</div>
 	</div>);
 }

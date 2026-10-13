@@ -112,7 +112,7 @@ export const DEFAULT_THEME: Theme = {
 	author: "Anonymous",
 	id: "com.example.Theme",
 	version: 1,
-	description: "This is a template FUTO Keyboard theme",
+	description: "",
 	options: {
 		autoBorders: true,
 		centerHints: false,
