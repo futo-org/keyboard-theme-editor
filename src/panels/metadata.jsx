@@ -4,9 +4,10 @@ import State from "../state";
 const EV_META_UPDATE = "metadataUpdated";
 
 function generateThemeId() {
-	const author = State.theme.author.toLowerCase().replace(/\s+/g, "");
-	const themeName = State.theme.name.replace(/(?:^|\s|_|-)(\w)/g, (_, c) => c ? c.toUpperCase() : '');
-	return `p.${author}.${themeName}`;
+	const author = State.theme.author.toLowerCase().replace(/\W+/g, '');
+	const themeName = State.theme.name.replace(/\W/g, '').replace(/(?:^|\s|_|-)(\w)/g, (_, c) => c ? c.toUpperCase() : '');
+	const result = `p.${author}.${themeName}`;
+	return result;
 }
 
 export function buildMetadataPanel(registerListeners) {
